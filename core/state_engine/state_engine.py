@@ -1,29 +1,45 @@
+#!/usr/bin/env python3
+# state_engine.py - Core state manager for Deus Ex Machina
 import json
 import os
+import logging
+import sys
 from datetime import datetime, timedelta
 
-STATE_FILE = "/var/log/deus-ex-machina/state.json"
-HEARTBEAT_FILE = "/var/log/deus-ex-machina/heartbeat.json"
+# Add project root to path for imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+from config.config import STATE_FILE, HEARTBEAT_JSON, THRESHOLDS, DEFAULT_TTL, LOG_DIR
+
+# Set up logging
+logging.basicConfig(
+    filename=os.path.join(LOG_DIR, "state_engine.log"),
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger("StateEngine")
+
+# Create log directory if it doesn't exist
+os.makedirs(LOG_DIR, exist_ok=True)
 
 DEFAULT_STATE = {
     "state": "normal",
     "last_transition": datetime.now().isoformat(),
-    "ttl_seconds": 600
+    "ttl_seconds": DEFAULT_TTL
 }
 
 TRANSITIONS = {
     "normal": {
-        "thresholds": {"cpu_load": 1.0, "open_ports": 100},
+        "thresholds": THRESHOLDS["normal"],
         "next": "suspicious",
         "previous": None
     },
     "suspicious": {
-        "thresholds": {"cpu_load": 2.0, "open_ports": 150},
+        "thresholds": THRESHOLDS["suspicious"],
         "next": "alert",
         "previous": "normal"
     },
     "alert": {
-        "thresholds": {"cpu_load": 4.0, "open_ports": 200},
+        "thresholds": THRESHOLDS["alert"],
         "next": "critical",
         "previous": "suspicious"
     },
@@ -35,47 +51,78 @@ TRANSITIONS = {
 }
 
 def load_state():
-    if not os.path.exists(STATE_FILE):
+    """Load current state from file or return default"""
+    try:
+        if not os.path.exists(STATE_FILE):
+            return DEFAULT_STATE
+        with open(STATE_FILE, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Error loading state: {str(e)}")
         return DEFAULT_STATE
-    with open(STATE_FILE, 'r') as f:
-        return json.load(f)
 
 def save_state(state):
-    with open(STATE_FILE, 'w') as f:
-        json.dump(state, f, indent=2)
+    """Save current state to file"""
+    try:
+        with open(STATE_FILE, 'w') as f:
+            json.dump(state, f, indent=2)
+    except Exception as e:
+        logger.error(f"Error saving state: {str(e)}")
 
 def should_escalate(current_metrics, state):
+    """Determine if system state should escalate based on metrics"""
     current_state = state["state"]
     thresholds = TRANSITIONS[current_state]["thresholds"]
+    
+    # Check each threshold
     for key, value in thresholds.items():
         try:
-            if float(current_metrics.get(key, 0)) > value:
+            # For metrics where lower is worse (like memory_free)
+            if key == "memory_free_mb":
+                if float(current_metrics.get(key, 9999)) < value:
+                    logger.info(f"Escalation triggered by {key}: {current_metrics.get(key)} < {value}")
+                    return True
+            # For metrics where higher is worse
+            elif float(current_metrics.get(key, 0)) > value:
+                logger.info(f"Escalation triggered by {key}: {current_metrics.get(key)} > {value}")
                 return True
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Error checking threshold {key}: {str(e)}")
             continue
     return False
 
 def should_decay(state):
-    last = datetime.fromisoformat(state["last_transition"])
-    return datetime.now() > last + timedelta(seconds=state["ttl_seconds"])
+    """Check if enough time has passed to decay to a lower state"""
+    try:
+        last = datetime.fromisoformat(state["last_transition"])
+        should_decay = datetime.now() > last + timedelta(seconds=state["ttl_seconds"])
+        if should_decay:
+            logger.info(f"State decay triggered: {datetime.now()} > {last + timedelta(seconds=state['ttl_seconds'])}")
+        return should_decay
+    except Exception as e:
+        logger.error(f"Error checking decay: {str(e)}")
+        return False
 
 def transition_state(current_metrics):
+    """Determine if state should change based on metrics and time"""
     state = load_state()
     current_state = state["state"]
 
+    # Check if we should escalate
     if should_escalate(current_metrics, state):
         next_state = TRANSITIONS[current_state]["next"]
         if next_state != current_state:
-            print(f"Escalating to {next_state}")
+            logger.warning(f"Escalating from {current_state} to {next_state}")
             state["state"] = next_state
             state["last_transition"] = datetime.now().isoformat()
             save_state(state)
             return state
 
+    # Check if we should decay
     elif should_decay(state):
         previous_state = TRANSITIONS[current_state].get("previous")
         if previous_state and previous_state != current_state:
-            print(f"Decaying to {previous_state}")
+            logger.info(f"Decaying from {current_state} to {previous_state}")
             state["state"] = previous_state
             state["last_transition"] = datetime.now().isoformat()
             save_state(state)
@@ -86,22 +133,30 @@ def transition_state(current_metrics):
     return state
 
 def main():
-    if not os.path.exists(HEARTBEAT_FILE):
-        print("Heartbeat file not found.")
+    """Main function"""
+    logger.info("State engine started")
+    
+    # Check if heartbeat file exists
+    if not os.path.exists(HEARTBEAT_JSON):
+        logger.error("Heartbeat file not found.")
         return
 
-    with open(HEARTBEAT_FILE) as f:
-        metrics = json.load(f)
-
-    # Convert types if needed
     try:
+        # Load metrics
+        with open(HEARTBEAT_JSON) as f:
+            metrics = json.load(f)
+
+        # Convert types if needed
         metrics["cpu_load"] = float(metrics.get("cpu_load", 0))
         metrics["open_ports"] = int(metrics.get("open_ports", 0))
+        metrics["memory_free_mb"] = int(metrics.get("memory_free_mb", 0))
     except Exception as e:
-        print(f"Error parsing metrics: {e}")
+        logger.error(f"Error parsing metrics: {e}")
+        return
 
     updated_state = transition_state(metrics)
-    print("Current state:", updated_state["state"])
+    logger.info(f"Current state: {updated_state['state']}")
+    print(f"Current state: {updated_state['state']}")
 
 if __name__ == "__main__":
     main()
