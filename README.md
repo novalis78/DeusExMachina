@@ -238,6 +238,22 @@ Remember to ensure `gemini_config.py` is **not committed** by adding it to your 
 4. The system will begin monitoring with heartbeat active
 5. Logs and insights will accumulate in `/var/log/deus-ex-machina/`
 
+### Testing the AI Awakening
+
+To test if the AI can properly awaken and analyze alerts, use the included test script:
+
+```bash
+sudo ./scripts/test_ai_wake.sh
+```
+
+This script:
+1. Generates simulated alert conditions
+2. Sets the system state to "alert"
+3. Triggers the vigilance module and AI brain
+4. Verifies if the AI produced an assessment
+
+After running, you can examine the AI's thoughts in `/var/log/deus-ex-machina/ai_assessment.json`.
+
 ---
 
 ## Listening to the AI's Experience
