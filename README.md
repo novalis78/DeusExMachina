@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="header.png" alt="Deus Ex Machina Banner" width="100%">
+</p>
 # Deus Ex Machina
 
 > A self-aware, token-efficient AI agent designed to maintain, monitor, and protect a Linux server through intelligent observation cycles: heartbeat, breath, and vigilance.
@@ -88,6 +91,45 @@ In this model, token usage is sacred. The AI becomes a background overseer—a l
 - `breath.sh` performs integrity and config checks
 - `vigilance.sh` performs deep analysis and calls `ai_brain.py`
 - `ai_brain.py` is invoked *only by* `vigilance.sh` when alert conditions exist
+
+---
+
+## Cronjob Setup and Timing
+
+Here’s how to schedule everything if you’re using `cron`. Use `crontab -e` to edit root/system cron:
+
+```cron
+# Run state engine every 2 minutes
+*/2 * * * * /usr/bin/python3 /opt/deus-ex-machina/core/state_engine/state_engine.py >> /var/log/deus-ex-machina/state_engine.log 2>&1
+
+# Run trigger (launches breath/vigilance based on state)
+*/2 * * * * /usr/bin/python3 /opt/deus-ex-machina/core/state_engine/state_trigger.py >> /var/log/deus-ex-machina/state_trigger.log 2>&1
+```
+
+`heartbeat.sh` is designed to run as a persistent **systemd service**, like so:
+
+```ini
+# /etc/systemd/system/deus-heartbeat.service
+[Unit]
+Description=Deus Ex Machina Heartbeat Monitor
+After=network.target
+
+[Service]
+ExecStart=/opt/deus-ex-machina/core/heartbeat/heartbeat.sh
+Restart=always
+User=root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable with:
+```bash
+sudo systemctl daemon-reexec
+sudo systemctl enable --now deus-heartbeat
+```
 
 ---
 
