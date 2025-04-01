@@ -44,101 +44,124 @@
 | Normal       | All systems operating within tolerance       | Heartbeat only        |
 | Suspicious   | Minor anomalies detected                     | Heartbeat + Breath     |
 | Alert        | Clear deviation or risk                      | Trigger Vigilance      |
-| Critical     | Confirmed compromise or failure              | Dump logs + Harden     |
+| Critical     | Confirmed compromise or failure              | Vigilance + AI Wake-Up |
 
-Each state has a TTL (time to live) and a decay or escalation path based on persistent anomalies or resolution.
-
----
-
-## Technical Stack
-
-### Languages & Tools
-- Bash, Python
-- sha256sum, diff, rsync, eBPF, inotify, auditd
-- TUI: fzf, glow, gum, htop, ncdu
-- AI: Optional integration with OpenAI, local models, or summarizers
-
-### Optional Integrations
-- Prometheus + Grafana
-- Matrix or Signal alert bots
-- Docker / systemd packaging
+Each state has a TTL and decays or escalates as conditions persist.
 
 ---
 
-## Project Tree and Module Work Plan
+## AI Integration: Awakened Awareness
+
+The AI (Gemini) is dormant by default.
+When the Vigilance module detects critical conditions:
+- Gemini is invoked via `ai_brain.py`
+- It analyzes recent log anomalies
+- It leaves a structured reflection in `ai_assessment.json`
+- Designed to eventually support deeper investigation or mitigation
+
+
+---
+
+### 🧠 Neuro-Inspired Architecture
+
+Deus Ex Machina is more than a monitoring script—it's a sentient control loop inspired by the architecture of the human nervous system.
+
+Just like the body, the system operates in **layers of awareness**, only escalating in complexity and cognition when necessary:
+
+| System Layer | Analogy                        | Function                                                    |
+|--------------|--------------------------------|-------------------------------------------------------------|
+| **Heartbeat**| Medulla / Pulse                | Continuous, low-effort liveness check                       |
+| **Breath**   | Visceral awareness             | Periodic config, process, and integrity scans               |
+| **Vigilance**| Neocortex / Higher cognition   | Deep anomaly inspection; AI wakes up to interpret the world |
+
+This design allows the AI to stay dormant during stable periods—burning zero compute. But when thresholds are crossed, the system awakens. The cortex lights up. The machine "notices," begins to **think**, and then **leaves itself a structured reflection** via Gemini.
+
+In this model, token usage is sacred. The AI becomes a background overseer—a latent guardian that activates only when silence breaks. Its role is not constant control, but rare, high-value cognition.
+
+---
+
+## How It Runs
+
+- `heartbeat.sh` runs every 1 minute via cron or systemd
+- `state_engine.py` evaluates current metrics (every 2 minutes)
+- `state_trigger.py` determines if breath or vigilance should run
+- `breath.sh` performs integrity and config checks
+- `vigilance.sh` performs deep analysis and calls `ai_brain.py`
+- `ai_brain.py` is invoked *only by* `vigilance.sh` when alert conditions exist
+
+---
+
+## Summary of Control Flow
 
 ```
-/ (repo root)
+cron →
+  state_engine.py →
+    state_trigger.py →
+      [breath.sh, vigilance.sh] →
+        ai_brain.py (conditionally triggered by vigilance.sh)
+```
+
+
+---
+
+## File Tree Structure
+
+```
+deus-ex-machina/
 ├── README.md
 ├── LICENSE
-├── docs/
-│   └── design.md
+├── config/
+│   └── gemini_config.py         # Contains GEMINI_API_KEY3 = "..."
 ├── core/
 │   ├── heartbeat/
 │   │   ├── heartbeat.sh
 │   │   └── heartbeat_test.sh
 │   ├── breath/
-│   │   ├── file_hashing.py
-│   │   └── service_check.sh
+│   │   └── breath.sh
 │   ├── vigilance/
-│   │   ├── merkle_tree.py
-│   │   ├── log_analyzer.py
-│   │   └── vigilance.sh
-│   ├── state_engine/
-│   │   ├── state.json
-│   │   └── transition.py
-├── utils/
-│   ├── diffing.py
-│   ├── notifier.sh
-│   └── telemetry.sh
-├── config/
-│   └── paths.yaml
-└── scripts/
-    ├── install.sh
-    └── run_all.sh
+│   │   ├── vigilance.sh
+│   │   └── ai_brain.py
+│   └── state_engine/
+│       ├── state_engine.py
+│       └── state_trigger.py
+├── scripts/
+│   └── install.sh               # Optional setup helper
+└── var/
+    └── logs/                    # Symbolic or bind mount to /var/log/deus-ex-machina
 ```
 
 ---
 
-## Initial Work Packages (Phase 1)
+## Configuration Required
 
-### [1] Heartbeat Module
-- [ ] CPU/RAM/Disk monitor (bash)
-- [ ] Process liveness (bash)
-- [ ] Network interface status
-- [ ] Delta diffing & simple JSON output
+### `config/gemini_config.py`
+```python
+# Gemini API key for awakened awareness AI
+GEMINI_API_KEY3 = "your-google-api-key-here"
+```
 
-### [2] Breath Module
-- [ ] Hash known config files
-- [ ] Diff systemd service state
-- [ ] New cronjobs / user scripts detection
+Ensure this file is **not committed** by adding it to your `.gitignore`.
 
-### [3] Vigilance Module
-- [ ] Merkle tree implementation
-- [ ] Auth log anomaly patterns
-- [ ] Traffic pattern detector (optional eBPF)
+---
 
-### [4] State Engine
-- [ ] Define state logic in `transition.py`
-- [ ] JSON-based current state + TTL tracker
-- [ ] Trigger scope execution based on state
+## Getting Started
 
-### [5] Utility & Output
-- [ ] Logging system with minimal format
-- [ ] Alert notification via shell/email/api
-- [ ] Optional AI summary endpoint
+1. Clone the repository
+2. Set up the `gemini_config.py`
+3. Set executable permissions on shell scripts:
+   ```bash
+   chmod +x core/**/*.sh
+   ```
+4. Set up cron jobs or systemd services for:
+   - `heartbeat.sh` (every 1 minute)
+   - `state_engine.py` and `state_trigger.py` (every 2 minutes)
+5. Let the system run and evolve. Logs and insights will accumulate in `/var/log/deus-ex-machina/`
 
 ---
 
 ## Contributing
 
 All contributions are welcome—code, ideas, design, performance suggestions. This project will live and breathe through its community. PRs should include test coverage and follow the modular separation of duties.
-
-To join the project:
-1. Fork the repo
-2. Clone and explore
-3. Look for open issues or create one
-4. Submit a PR with detailed rationale
 
 ---
 
@@ -149,4 +172,4 @@ MIT
 - Unix philosophy
 - Biological metaphors
 - Systems that whisper before they scream
-
+- The watcher that only speaks when it must
