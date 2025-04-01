@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("AwakenedAwareness")
 
 # Initialize Gemini
-genai.configure(api_key=GEMINI_API_KEY3)
+genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel("gemini-2.0-flash")
 
 def awakened_awareness():
