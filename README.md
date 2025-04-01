@@ -85,7 +85,7 @@ In this model, token usage is sacred. The AI becomes a background overseer—a l
 
 ## How It Runs
 
-- `heartbeat.sh` runs every 1 minute via cron or systemd
+- `heartbeat.sh` runs every 1 minute via systemd service
 - `state_engine.py` evaluates current metrics (every 2 minutes)
 - `state_trigger.py` determines if breath or vigilance should run
 - `breath.sh` performs integrity and config checks
@@ -94,9 +94,33 @@ In this model, token usage is sacred. The AI becomes a background overseer—a l
 
 ---
 
+## Installation
+
+The simplest way to install Deus Ex Machina is using the provided installation script:
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/deus-ex-machina.git
+cd deus-ex-machina
+
+# Set the API key (never commit this!)
+echo 'GEMINI_API_KEY = "your-google-api-key-here"' > config/gemini_config.py
+
+# Make scripts executable
+chmod +x scripts/install.sh
+chmod +x core/**/*.sh
+
+# Run the installer as root
+sudo ./scripts/install.sh
+```
+
+Alternatively, you can set up the system manually as described below.
+
+---
+
 ## Cronjob Setup and Timing
 
-Here’s how to schedule everything if you’re using `cron`. Use `crontab -e` to edit root/system cron:
+Here's how to schedule everything if you're using `cron`. Use `crontab -e` to edit root/system cron:
 
 ```cron
 # Run state engine every 2 minutes
@@ -127,7 +151,7 @@ WantedBy=multi-user.target
 
 Enable with:
 ```bash
-sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
 sudo systemctl enable --now deus-heartbeat
 ```
 
@@ -136,6 +160,7 @@ sudo systemctl enable --now deus-heartbeat
 ## Summary of Control Flow
 
 ```
+systemd → heartbeat.sh (continuous)
 cron →
   state_engine.py →
     state_trigger.py →
@@ -152,11 +177,14 @@ cron →
 deus-ex-machina/
 ├── README.md
 ├── LICENSE
+├── DEVELOPMENT.md         # Development roadmap
 ├── config/
-│   └── gemini_config.py         # Contains GEMINI_API_KEY = "..."
+│   ├── config.py          # Centralized configuration
+│   └── gemini_config.py   # Contains GEMINI_API_KEY (not committed)
 ├── core/
 │   ├── heartbeat/
 │   │   ├── heartbeat.sh
+│   │   ├── heartbeat.service
 │   │   └── heartbeat_test.sh
 │   ├── breath/
 │   │   └── breath.sh
@@ -167,37 +195,70 @@ deus-ex-machina/
 │       ├── state_engine.py
 │       └── state_trigger.py
 ├── scripts/
-│   └── install.sh               # Optional setup helper
+│   ├── install.sh         # Installation script
+│   └── bash_config.sh     # Shared bash configuration
 └── var/
-    └── logs/                    # Symbolic or bind mount to /var/log/deus-ex-machina
+    └── logs/              # Symbolic or bind mount to /var/log/deus-ex-machina
 ```
 
 ---
 
-## Configuration Required
+## Configuration 
 
-### `config/gemini_config.py`
-```python
-# Gemini API key for awakened awareness AI
-GEMINI_API_KEY = "your-google-api-key-here"
-```
+### Environment Variables
+The system now supports configuration through environment variables:
 
-Ensure this file is **not committed** by adding it to your `.gitignore`.
+- `DEUS_INSTALL_DIR`: Installation directory (default: `/opt/deus-ex-machina`)
+- `DEUS_LOG_DIR`: Log directory (default: `/var/log/deus-ex-machina`)
+- `GEMINI_API_KEY`: Google Gemini API key for AI analysis
+
+### Configuration Files
+The main configuration files are:
+
+1. `config/config.py`: Central Python configuration
+2. `config/gemini_config.py`: API key for Gemini (fallback if not in environment)
+3. `scripts/bash_config.sh`: Shared configuration for bash scripts
+
+At minimum, you must provide a Gemini API key in either:
+- The environment variable `GEMINI_API_KEY`, or
+- The `config/gemini_config.py` file
+
+Remember to ensure `gemini_config.py` is **not committed** by adding it to your `.gitignore`.
 
 ---
 
 ## Getting Started
 
 1. Clone the repository
-2. Set up the `gemini_config.py`
-3. Set executable permissions on shell scripts:
+2. Set up the API key in environment or `gemini_config.py`
+3. Run the installation script or set up manually:
    ```bash
-   chmod +x core/**/*.sh
+   sudo ./scripts/install.sh
    ```
-4. Set up cron jobs or systemd services for:
-   - `heartbeat.sh` (every 1 minute)
-   - `state_engine.py` and `state_trigger.py` (every 2 minutes)
-5. Let the system run and evolve. Logs and insights will accumulate in `/var/log/deus-ex-machina/`
+4. The system will begin monitoring with heartbeat active
+5. Logs and insights will accumulate in `/var/log/deus-ex-machina/`
+
+---
+
+## Listening to the AI's Experience
+
+Deus Ex Machina allows you to "listen in" on what the AI is experiencing and thinking during its periods of awareness:
+
+1. **Monitoring Core Logs**:
+   - `/var/log/deus-ex-machina/heartbeat.log`: Basic system metrics
+   - `/var/log/deus-ex-machina/breath.log`: Configuration and integrity checks
+   - `/var/log/deus-ex-machina/vigilance.log`: Deep analysis and anomaly detection
+
+2. **Following State Transitions**:
+   - `/var/log/deus-ex-machina/state_engine.log`: Shows when and why state changes occur
+   - `/var/log/deus-ex-machina/state.json`: Current system state
+
+3. **AI Awakened Consciousness**:
+   - `/var/log/deus-ex-machina/vigilance_alerts.log`: Events that triggered AI awareness
+   - `/var/log/deus-ex-machina/ai_assessment.json`: The AI's structured reflections and analysis
+   - `/var/log/deus-ex-machina/ai_brain.log`: Log of the AI's activity and decision process
+
+The `ai_assessment.json` file is particularly interesting as it contains the AI's structured thoughts about anomalies it detects - including severity assessments, analysis of patterns, and recommendations. This file is only updated when the system reaches alert state and the AI "awakens" to analyze the situation.
 
 ---
 
