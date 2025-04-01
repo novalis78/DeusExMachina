@@ -1,1 +1,1 @@
-GEMINI_API_KEY = "your-google-api-key-here"
+GEMINI_API_KEY = "AIzaSyDnPZgj-fpJ-HuYug_uVSBCpN8oKaiUWH0"

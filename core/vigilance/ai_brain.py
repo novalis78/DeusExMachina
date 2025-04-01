@@ -6,7 +6,7 @@ import google.generativeai as genai
 from datetime import datetime
 
 # Configuration (load from external file or environment later)
-from config.gemini_config import GEMINI_API_KEY3
+from config.gemini_config import GEMINI_API_KEY
 
 LOG_PATH = "/var/log/deus-ex-machina/vigilance_alerts.log"
 ASSESSMENT_PATH = "/var/log/deus-ex-machina/ai_assessment.json"

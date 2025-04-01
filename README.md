@@ -153,7 +153,7 @@ deus-ex-machina/
 ├── README.md
 ├── LICENSE
 ├── config/
-│   └── gemini_config.py         # Contains GEMINI_API_KEY3 = "..."
+│   └── gemini_config.py         # Contains GEMINI_API_KEY = "..."
 ├── core/
 │   ├── heartbeat/
 │   │   ├── heartbeat.sh
@@ -179,7 +179,7 @@ deus-ex-machina/
 ### `config/gemini_config.py`
 ```python
 # Gemini API key for awakened awareness AI
-GEMINI_API_KEY3 = "your-google-api-key-here"
+GEMINI_API_KEY = "your-google-api-key-here"
 ```
 
 Ensure this file is **not committed** by adding it to your `.gitignore`.
