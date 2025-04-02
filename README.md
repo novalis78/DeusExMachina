@@ -100,7 +100,7 @@ The simplest way to install Deus Ex Machina is using the provided installation s
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/deus-ex-machina.git
+git clone https://github.com/novalis78/deus-ex-machina.git
 cd deus-ex-machina
 
 # Set the API key (never commit this!)
