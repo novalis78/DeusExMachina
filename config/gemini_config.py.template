@@ -1,0 +1,4 @@
+# Gemini API configuration
+# Copy this file to gemini_config.py and add your API key
+
+GEMINI_API_KEY = "YOUR_API_KEY_HERE"

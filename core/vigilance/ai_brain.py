@@ -8,6 +8,7 @@ import re
 import logging
 import sys
 from datetime import datetime
+import google.generativeai as genai
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
