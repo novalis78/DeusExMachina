@@ -6,14 +6,14 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Source bash configuration
+# Use project's var directory for logs instead of system location
+LOG_DIR="$PROJECT_ROOT/var/logs"
+ALERT_LOG="$LOG_DIR/vigilance_alerts.log"
+STATE_FILE="$LOG_DIR/state.json"
+
+# Source bash configuration if available 
 if [ -f "$PROJECT_ROOT/scripts/bash_config.sh" ]; then
     source "$PROJECT_ROOT/scripts/bash_config.sh"
-else
-    # Default configuration
-    LOG_DIR="/var/log/deus-ex-machina"
-    ALERT_LOG="$LOG_DIR/vigilance_alerts.log"
-    STATE_FILE="$LOG_DIR/state.json"
 fi
 
 # Create log directory if it doesn't exist
@@ -43,6 +43,9 @@ generate_alerts() {
 
 # Set system state to alert
 set_alert_state() {
+    # Make sure directory exists
+    mkdir -p "$(dirname "$STATE_FILE")"
+    
     echo '{
   "state": "alert",
   "last_transition": "'$(date -Iseconds)'",

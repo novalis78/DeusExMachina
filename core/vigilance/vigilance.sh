@@ -6,17 +6,17 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Source bash configuration
+# Use project's var directory for logs instead of system location
+LOG_DIR="$PROJECT_ROOT/var/logs"
+ALERT_LOG="$LOG_DIR/vigilance_alerts.log"
+MERKLE_STORE="$LOG_DIR/merkle_root.hash"
+MERKLE_TEMP="/tmp/current_merkle.hash"
+AUTH_LOG="/var/log/auth.log"
+MERKLE_BASE_DIR="/etc /usr/bin /usr/sbin /home"
+
+# Source bash configuration if available
 if [ -f "$PROJECT_ROOT/scripts/bash_config.sh" ]; then
     source "$PROJECT_ROOT/scripts/bash_config.sh"
-else
-    # Default configuration if config file doesn't exist
-    MERKLE_BASE_DIR="/etc /usr/bin /usr/sbin /home"
-    MERKLE_STORE="/var/log/deus-ex-machina/merkle_root.hash"
-    MERKLE_TEMP="/tmp/current_merkle.hash"
-    AUTH_LOG="/var/log/auth.log"
-    ALERT_LOG="/var/log/deus-ex-machina/vigilance_alerts.log"
-    LOG_DIR="/var/log/deus-ex-machina"
 fi
 
 # Create log directory if it doesn't exist
@@ -43,7 +43,8 @@ generate_merkle_hash() {
     # Use ionice to limit I/O impact and nice to reduce CPU priority
     ionice -c 3 nice -n 19 find $MERKLE_BASE_DIR -type f -not -path "*/\.*" -not -path "*/node_modules/*" \
         -not -path "*/venv/*" -exec sha256sum {} + 2>/dev/null | \
-        sort | sha256sum | awk '{print $1}' > "$MERKLE_TEMP"
+        sort | sha256sum | awk '{print $1}' > "$LOG_DIR/current_merkle.hash"
+    cp "$LOG_DIR/current_merkle.hash" "$MERKLE_TEMP"
     
     if [ ! -s "$MERKLE_TEMP" ]; then
         log_message "ERROR" "Failed to generate Merkle hash"
@@ -59,7 +60,7 @@ check_integrity() {
     if [ ! -f "$MERKLE_TEMP" ]; then
         log_message "ERROR" "Merkle hash file not found"
         return 1
-    }
+    fi
     
     if [ ! -f "$MERKLE_STORE" ]; then
         cp "$MERKLE_TEMP" "$MERKLE_STORE"
@@ -70,7 +71,7 @@ check_integrity() {
     if [ ! -r "$MERKLE_STORE" ] || [ ! -r "$MERKLE_TEMP" ]; then
         log_message "ERROR" "Cannot read Merkle hash files"
         return 1
-    }
+    fi
 
     old=$(cat "$MERKLE_STORE")
     new=$(cat "$MERKLE_TEMP")
@@ -78,7 +79,7 @@ check_integrity() {
     if [ -z "$old" ] || [ -z "$new" ]; then
         log_message "ERROR" "Empty Merkle hash detected"
         return 1
-    }
+    fi
     
     if [ "$old" != "$new" ]; then
         log_message "ALERT" "🔥 SYSTEM INTEGRITY ALERT: Merkle root mismatch!"
