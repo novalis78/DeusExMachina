@@ -3,19 +3,25 @@
     "report_email": "admin@example.com",
     "report_day": "monday",
     "report_hour": 8,
+    
+    "email_config_info": "SMTP Configuration for standard email servers like Gmail, Office365, etc.",
     "email_config": {
         "smtp_server": "smtp.example.com",
         "smtp_port": 587,
         "smtp_username": "deus-ex-machina@example.com",
-        "smtp_password": "",
+        "smtp_password": "YOUR_PASSWORD_HERE",
         "from_email": "deus-ex-machina@example.com"
     },
+    
+    "sendgrid_config_info": "SendGrid API Configuration - Create account at https://sendgrid.com/ and get API key from dashboard",
     "sendgrid_config": {
-        "api_key": "",
+        "api_key": "SG.YOUR_SENDGRID_API_KEY_HERE",
         "from_email": "deus-ex-machina@example.com"
     },
+    
+    "mailgun_config_info": "Mailgun API Configuration - Create account at https://www.mailgun.com/ and get API key from dashboard",
     "mailgun_config": {
-        "api_key": "",
+        "api_key": "key-YOUR_MAILGUN_API_KEY_HERE",
         "domain": "example.com",
         "from_email": "deus-ex-machina@example.com"
     },

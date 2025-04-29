@@ -37,16 +37,41 @@ For deployment instructions, see [Deployment Guide](DEPLOYMENT_GUIDE.md).
 The enhanced system can send weekly email reports summarizing system health, incidents, and recommendations. To set up email reporting:
 
 1. Edit `/home/DeusExMachina/config/report_config.json` with your email settings:
+
+   a. First, choose a provider by setting `"email_provider"` to one of:
+      - `"smtp"` - For regular email servers (Gmail, Office365, etc.)
+      - `"sendgrid"` - For SendGrid API
+      - `"mailgun"` - For Mailgun API
+
+   b. Set your recipient email address:
+      ```json
+      "report_email": "your-email@example.com"
+      ```
+
+   c. Configure your chosen provider's API key:
+
+   **For SMTP**:
    ```json
-   {
-     "email_provider": "smtp",  // Options: smtp, sendgrid, mailgun
-     "report_email": "your-email@example.com",
-     "email_config": {
-       "smtp_server": "smtp.example.com",
-       "smtp_port": 587,
-       "smtp_username": "username",
-       "smtp_password": "password"
-     }
+   "email_config": {
+     "smtp_server": "smtp.example.com",
+     "smtp_port": 587,
+     "smtp_username": "username",
+     "smtp_password": "YOUR_PASSWORD_HERE"
+   }
+   ```
+
+   **For SendGrid**:
+   ```json
+   "sendgrid_config": {
+     "api_key": "SG.YOUR_SENDGRID_API_KEY_HERE" 
+   }
+   ```
+
+   **For Mailgun**:
+   ```json
+   "mailgun_config": {
+     "api_key": "key-YOUR_MAILGUN_API_KEY_HERE",
+     "domain": "example.com"
    }
    ```
 
