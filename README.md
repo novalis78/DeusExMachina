@@ -19,6 +19,21 @@
 
 ---
 
+## Monitoring the System
+
+The enhanced Deus Ex Machina system can be easily monitored through its comprehensive logging. For a complete guide on monitoring, understanding the system's behavior, and troubleshooting, please refer to our [Monitoring Guide](MONITORING_GUIDE.md).
+
+Quick tips:
+- Follow logs in real-time: `journalctl -u deus-enhanced.service -f`
+- View detailed logs: `tail -f /home/DeusExMachina/var/logs/deus.log`
+- Check service status: `systemctl status deus-enhanced.service`
+- Monitor different consciousness states (DORMANT, DROWSY, AWARE, ALERT, FULLY_AWAKE)
+- Track AI provider usage and system health assessments
+
+For deployment instructions, see [Deployment Guide](DEPLOYMENT_GUIDE.md).
+
+---
+
 ## Layers of Awareness
 
 ### 1. Heartbeat (every 30s to 2 min)
