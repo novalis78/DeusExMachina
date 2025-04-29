@@ -17,7 +17,13 @@ journalctl -u deus-enhanced.service -f
 journalctl -u deus-enhanced.service -n 50
 ```
 
-Additionally, detailed logs are stored in the configured log directory (typically `/home/DeusExMachina/var/logs/`):
+Additionally, detailed logs are stored in the configured log directory. The default path is:
+
+```bash
+/home/DeusExMachina/var/logs/deus.log
+```
+
+This directory is automatically created when the service first runs. If the service hasn't been started yet, you'll need to run it first before the logs directory exists.
 
 ```bash
 # View the main log file
@@ -25,7 +31,13 @@ cat /home/DeusExMachina/var/logs/deus.log
 
 # Follow the log in real-time
 tail -f /home/DeusExMachina/var/logs/deus.log
+
+# Create log directories manually if needed
+mkdir -p /home/DeusExMachina/var/logs
+mkdir -p /home/DeusExMachina/var/db
 ```
+
+**Note:** If you've installed the service with a different working directory in the service file, the logs will be located relative to that directory instead.
 
 ## Understanding Consciousness States
 
