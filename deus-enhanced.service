@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=claude
+User=root
 WorkingDirectory=/home/DeusExMachina
 ExecStart=/usr/bin/python3 /home/DeusExMachina/run.py --service
 Restart=on-failure
