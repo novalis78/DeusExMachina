@@ -36,3 +36,5 @@ ENV/
 .vscode/
 *.swp
 *.swo
+HANDOVER.md
+FINAL_HANDOVER.md
