@@ -10,6 +10,7 @@ import logging
 import datetime
 import smtplib
 import requests
+import re
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Dict, List, Any, Optional
@@ -185,13 +186,15 @@ class WeeklyReportGenerator:
     def _initialize_email_provider(self) -> Optional[EmailProvider]:
         """Initialize the email provider based on configuration"""
         provider_type = self.config.get('email_provider', 'smtp')
-        provider_config = self.config.get('email_config', {})
         
         if provider_type == 'smtp':
+            provider_config = self.config.get('email_config', {})
             return SMTPEmailProvider(provider_config)
         elif provider_type == 'sendgrid':
+            provider_config = self.config.get('sendgrid_config', {})
             return SendgridEmailProvider(provider_config)
         elif provider_type == 'mailgun':
+            provider_config = self.config.get('mailgun_config', {})
             return MailgunEmailProvider(provider_config)
         else:
             logger.error(f"Unknown email provider: {provider_type}")
@@ -204,6 +207,15 @@ class WeeklyReportGenerator:
             'current_metrics': {},
             'uptime_days': 0,
             'state_history': [],
+            'consciousness_data': {
+                'current_state': 'UNKNOWN',
+                'state_transitions_count': 0,
+                'state_distribution': {},
+                'time_fully_awake_percent': 0,
+                'time_dormant_percent': 0,
+                'awakening_triggers': [],
+                'ai_providers_used': []
+            },
             'incidents': [],
             'service_issues': [],
             'recommendations': []
@@ -277,6 +289,74 @@ class WeeklyReportGenerator:
         except Exception as e:
             logger.error(f"Error collecting state history: {str(e)}")
             
+        # Get consciousness data from enhanced logs
+        try:
+            enhanced_log_path = os.path.join(self.log_dir, "enhanced.log")
+            if os.path.exists(enhanced_log_path):
+                with open(enhanced_log_path, 'r') as f:
+                    log_lines = f.readlines()
+                    
+                # Process log lines to extract consciousness information
+                consciousness_states = {}
+                state_transitions = []
+                ai_providers = set()
+                awakening_triggers = []
+                current_state = "UNKNOWN"
+                
+                # Process the last week of logs (up to 10000 lines)
+                for line in log_lines[-10000:]:
+                    # Extract consciousness state changes
+                    if "Consciousness state changed:" in line:
+                        match = re.search(r'Consciousness state changed: ([A-Z_]+) -> ([A-Z_]+) \(([^)]+)\)', line)
+                        if match:
+                            from_state, to_state, reason = match.groups()
+                            state_transitions.append((from_state, to_state, reason))
+                            current_state = to_state
+                            
+                            # Save awakening triggers (transitions to higher states)
+                            if to_state in ['ALERT', 'FULLY_AWAKE'] and "Manual" not in reason:
+                                awakening_triggers.append(reason)
+                    
+                    # Extract current state info
+                    elif "Current state: " in line:
+                        match = re.search(r'Current state: ([A-Z_]+)', line)
+                        if match:
+                            current_state = match.group(1)
+                    
+                    # Count time spent in each state
+                    elif "Running " in line and " state " in line:
+                        for state in ["DORMANT", "DROWSY", "AWARE", "ALERT", "FULLY_AWAKE"]:
+                            if f"Running {state.lower()} state" in line:
+                                consciousness_states[state] = consciousness_states.get(state, 0) + 1
+                    
+                    # Track AI providers used
+                    elif "Analysis successful with provider:" in line:
+                        match = re.search(r'Analysis successful with provider: ([a-z_]+)', line)
+                        if match:
+                            ai_providers.add(match.group(1))
+                            
+                # Calculate statistics
+                total_entries = sum(consciousness_states.values()) or 1  # Avoid division by zero
+                
+                # Set the consciousness data
+                data['consciousness_data']['current_state'] = current_state
+                data['consciousness_data']['state_transitions_count'] = len(state_transitions)
+                data['consciousness_data']['state_distribution'] = {
+                    state: round((count / total_entries) * 100, 1) 
+                    for state, count in consciousness_states.items()
+                }
+                
+                # Calculate time spent in highest and lowest states
+                data['consciousness_data']['time_fully_awake_percent'] = data['consciousness_data']['state_distribution'].get('FULLY_AWAKE', 0)
+                data['consciousness_data']['time_dormant_percent'] = data['consciousness_data']['state_distribution'].get('DORMANT', 0)
+                
+                # Get unique awakening triggers and AI providers
+                data['consciousness_data']['awakening_triggers'] = list(set(awakening_triggers))[-5:]  # Last 5 unique triggers
+                data['consciousness_data']['ai_providers_used'] = list(ai_providers)
+                
+        except Exception as e:
+            logger.error(f"Error collecting consciousness data: {str(e)}")
+            
         # Generate recommendations based on collected data
         recommendations = []
         
@@ -335,6 +415,38 @@ class WeeklyReportGenerator:
                 report.append(f"- {transition['from']} → {transition['to']}: {transition['reason']}")
             report.append("")
             
+        # Add AI consciousness section
+        report.extend([
+            "AI CONSCIOUSNESS ACTIVITY",
+            "=========================",
+            f"Current State: {data['consciousness_data']['current_state']}",
+            f"State Transitions: {data['consciousness_data']['state_transitions_count']} times",
+            f"Time Fully Awake: {data['consciousness_data']['time_fully_awake_percent']}%",
+            f"Time Dormant: {data['consciousness_data']['time_dormant_percent']}%",
+            "",
+        ])
+        
+        # Add state distribution if available
+        if data['consciousness_data']['state_distribution']:
+            report.append("Time Spent in Each State:")
+            for state, percentage in data['consciousness_data']['state_distribution'].items():
+                report.append(f"- {state}: {percentage}%")
+            report.append("")
+            
+        # Add awakening triggers if available
+        if data['consciousness_data']['awakening_triggers']:
+            report.append("Recent Awakening Triggers:")
+            for trigger in data['consciousness_data']['awakening_triggers']:
+                report.append(f"- {trigger}")
+            report.append("")
+            
+        # Add AI providers used if available
+        if data['consciousness_data']['ai_providers_used']:
+            report.append("AI Providers Used:")
+            for provider in data['consciousness_data']['ai_providers_used']:
+                report.append(f"- {provider}")
+            report.append("")
+            
         # Add recommendations
         if data['recommendations']:
             report.extend([
@@ -374,6 +486,26 @@ class WeeklyReportGenerator:
                 background-color: #fff;
                 border-radius: 5px;
                 box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+            .consciousness-overview {
+                background-color: #f0f7ff;
+                border-left: 4px solid #3498db;
+                padding: 15px;
+                margin-bottom: 20px;
+                border-radius: 4px;
+            }
+            .state-distribution {
+                max-width: 60%;
+            }
+            .status-dormant {
+                color: #6c757d;
+            }
+            h3 {
+                color: #34495e;
+                margin-top: 25px;
+            }
+            .triggers-list li, .providers-list li {
+                margin-bottom: 8px;
             }
             .header {
                 background-color: #2c3e50;
@@ -525,6 +657,104 @@ class WeeklyReportGenerator:
                 """
             html += "</table>"
             
+        # Add AI Consciousness section
+        html += """
+            <h2>AI Consciousness Activity</h2>
+            <p>Information about the system's biological-inspired awareness states and activity.</p>
+            
+            <div class="consciousness-overview">
+                <table>
+                    <tr>
+                        <th>Current State</th>
+                        <td><strong>{}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>State Transitions</th>
+                        <td>{} times</td>
+                    </tr>
+                    <tr>
+                        <th>Time Fully Awake</th>
+                        <td>{}%</td>
+                    </tr>
+                    <tr>
+                        <th>Time Dormant</th>
+                        <td>{}%</td>
+                    </tr>
+                </table>
+            </div>
+        """.format(
+            data['consciousness_data']['current_state'],
+            data['consciousness_data']['state_transitions_count'],
+            data['consciousness_data']['time_fully_awake_percent'],
+            data['consciousness_data']['time_dormant_percent']
+        )
+        
+        # Add consciousness state distribution if available
+        if data['consciousness_data']['state_distribution']:
+            html += """
+                <h3>Time Spent in Each State</h3>
+                <div class="state-distribution">
+                    <table>
+                        <tr>
+                            <th>State</th>
+                            <th>Percentage</th>
+                        </tr>
+            """
+            
+            for state, percentage in data['consciousness_data']['state_distribution'].items():
+                # Determine color based on the state
+                color_class = "status-ok"
+                if state == "ALERT":
+                    color_class = "status-warning"
+                elif state == "FULLY_AWAKE":
+                    color_class = "status-critical"
+                elif state == "DORMANT":
+                    color_class = "status-dormant"
+                    
+                html += f"""
+                        <tr>
+                            <td>{state}</td>
+                            <td class="{color_class}">{percentage}%</td>
+                        </tr>
+                """
+                
+            html += """
+                    </table>
+                </div>
+            """
+            
+        # Add awakening triggers if available
+        if data['consciousness_data']['awakening_triggers']:
+            html += """
+                <h3>Recent Awakening Triggers</h3>
+                <ul class="triggers-list">
+            """
+            
+            for trigger in data['consciousness_data']['awakening_triggers']:
+                html += f"""
+                    <li>{trigger}</li>
+                """
+                
+            html += """
+                </ul>
+            """
+            
+        # Add AI providers used if available
+        if data['consciousness_data']['ai_providers_used']:
+            html += """
+                <h3>AI Providers Used</h3>
+                <ul class="providers-list">
+            """
+            
+            for provider in data['consciousness_data']['ai_providers_used']:
+                html += f"""
+                    <li>{provider}</li>
+                """
+                
+            html += """
+                </ul>
+            """
+        
         # Add recommendations section if there are any
         if data['recommendations']:
             html += """
@@ -581,7 +811,7 @@ def generate_weekly_report(config_path: str = None, email: str = None) -> bool:
     try:
         # Load configuration
         if config_path is None:
-            config_path = "/home/DeusExMachina/config/report_config.json"
+            config_path = "/home/claude/deus_test/config/report_config.json"
             
         config = {}
         if os.path.exists(config_path):
