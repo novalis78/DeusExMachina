@@ -32,6 +32,37 @@ Quick tips:
 
 For deployment instructions, see [Deployment Guide](DEPLOYMENT_GUIDE.md).
 
+## Weekly Email Reports
+
+The enhanced system can send weekly email reports summarizing system health, incidents, and recommendations. To set up email reporting:
+
+1. Edit `/home/DeusExMachina/config/report_config.json` with your email settings:
+   ```json
+   {
+     "email_provider": "smtp",  // Options: smtp, sendgrid, mailgun
+     "report_email": "your-email@example.com",
+     "email_config": {
+       "smtp_server": "smtp.example.com",
+       "smtp_port": 587,
+       "smtp_username": "username",
+       "smtp_password": "password"
+     }
+   }
+   ```
+
+2. Add the provided crontab entry to your system:
+   ```bash
+   crontab -e
+   # Add the line from /home/DeusExMachina/config/crontab_addition.txt
+   ```
+
+3. Generate a sample report to preview the format:
+   ```bash
+   python3 /home/DeusExMachina/enhanced/generate_sample_report.py
+   ```
+
+The report includes current system metrics, service health, state transitions, and recommendations for optimizing your server.
+
 ---
 
 ## Layers of Awareness
