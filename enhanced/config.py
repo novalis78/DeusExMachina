@@ -7,7 +7,7 @@ import os
 
 # Base paths
 INSTALL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-LOG_DIR = os.path.join(INSTALL_DIR, "var/logs")
+LOG_DIR = "/var/log/deus-ex-machina"
 DB_DIR = os.path.join(INSTALL_DIR, "var/db")
 
 # Database configuration

@@ -17,27 +17,68 @@ journalctl -u deus-enhanced.service -f
 journalctl -u deus-enhanced.service -n 50
 ```
 
-Additionally, detailed logs are stored in the configured log directory. The default path is:
+Additionally, detailed logs are stored in the standard system log directory:
 
 ```bash
-/home/DeusExMachina/var/logs/deus.log
+/var/log/deus-ex-machina/enhanced.log
 ```
 
-This directory is automatically created when the service first runs. If the service hasn't been started yet, you'll need to run it first before the logs directory exists.
+This follows Linux filesystem standards and integrates with the existing Deus Ex Machina logs:
 
 ```bash
 # View the main log file
-cat /home/DeusExMachina/var/logs/deus.log
+cat /var/log/deus-ex-machina/enhanced.log
 
 # Follow the log in real-time
-tail -f /home/DeusExMachina/var/logs/deus.log
+tail -f /var/log/deus-ex-machina/enhanced.log
 
-# Create log directories manually if needed
-mkdir -p /home/DeusExMachina/var/logs
-mkdir -p /home/DeusExMachina/var/db
+# View all logs in the directory
+ls -la /var/log/deus-ex-machina/
 ```
 
-**Note:** If you've installed the service with a different working directory in the service file, the logs will be located relative to that directory instead.
+**Note:** The enhanced system's logs will appear alongside the existing Deus Ex Machina component logs (heartbeat.log, breath.log, state_engine.log, etc.).
+
+## Monitoring Existing Components
+
+The original Deus Ex Machina system maintains several key status files that provide valuable information about the system:
+
+### Heartbeat Monitoring
+
+```bash
+# View current heartbeat metrics
+cat /var/log/deus-ex-machina/heartbeat.json
+```
+
+Example output:
+```json
+{
+  "timestamp": "2025-04-29 14:08:06",
+  "cpu_load": "0.35",
+  "memory_free_mb": "995",
+  "disk_usage_root": "18",
+  "open_ports": 12,
+  "uptime": "up 13 weeks, 6 days, 23 hours, 27 minutes",
+  "total_processes": 167
+}
+```
+
+### System State
+
+```bash
+# View current system state
+cat /var/log/deus-ex-machina/state.json
+```
+
+Example output:
+```json
+{
+  "state": "normal",
+  "last_transition": "2025-04-29T11:08:01.595039",
+  "ttl_seconds": 600
+}
+```
+
+The enhanced system integrates with these existing components, using their data to inform consciousness transitions.
 
 ## Understanding Consciousness States
 

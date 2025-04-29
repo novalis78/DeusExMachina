@@ -20,15 +20,19 @@ from ai_providers import AIProviderManager
 from action_grammar import ActionGrammar
 
 # Set up logging
+log_file = os.path.join(CONFIG["log_dir"], "enhanced.log")
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.path.join(CONFIG["log_dir"], "deus.log")),
+        logging.FileHandler(log_file),
         logging.StreamHandler()
     ]
 )
-logger = logging.getLogger("deus")
+logger = logging.getLogger("deus-enhanced")
+
+# Log startup information
+logger.info(f"Starting Deus Ex Machina Enhanced, logging to {log_file}")
 
 def generate_sample_data():
     """Generate some sample system data for testing"""
