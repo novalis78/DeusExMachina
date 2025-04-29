@@ -18,7 +18,6 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/opt/deus-ex-machina/var/logs/ai_providers.log'),
         logging.StreamHandler()
     ]
 )
@@ -447,15 +446,27 @@ class AIProviderManager:
     def _initialize_providers(self) -> None:
         """Initialize all available providers"""
         # Google AI
-        google_config = self.config.get('google_ai', {})
+        google_config = self.config.get('google_ai', {}).copy()  # Create a copy to avoid modifying original
+        if 'api_key_env' in google_config and not google_config.get('api_key'):
+            env_var = google_config.pop('api_key_env')
+            google_config['api_key'] = os.environ.get(env_var)
+            self.logger.info(f"Retrieved Google AI key from environment: {env_var}")
         self.providers.append(GoogleAIProvider(google_config))
         
         # Anthropic
-        anthropic_config = self.config.get('anthropic', {})
+        anthropic_config = self.config.get('anthropic', {}).copy()
+        if 'api_key_env' in anthropic_config and not anthropic_config.get('api_key'):
+            env_var = anthropic_config.pop('api_key_env')
+            anthropic_config['api_key'] = os.environ.get(env_var)
+            self.logger.info(f"Retrieved Anthropic key from environment: {env_var}")
         self.providers.append(AnthropicProvider(anthropic_config))
         
         # OpenAI
-        openai_config = self.config.get('openai', {})
+        openai_config = self.config.get('openai', {}).copy()
+        if 'api_key_env' in openai_config and not openai_config.get('api_key'):
+            env_var = openai_config.pop('api_key_env')
+            openai_config['api_key'] = os.environ.get(env_var)
+            self.logger.info(f"Retrieved OpenAI key from environment: {env_var}")
         self.providers.append(OpenAIProvider(openai_config))
         
         # Local (always last as fallback)

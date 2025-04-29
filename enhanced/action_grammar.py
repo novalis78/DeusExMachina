@@ -21,7 +21,6 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/opt/deus-ex-machina/var/logs/action_grammar.log'),
         logging.StreamHandler()
     ]
 )

@@ -1,0 +1,20 @@
+[Unit]
+Description=Deus Ex Machina Enhanced System
+After=network.target
+
+[Service]
+Type=simple
+User=claude
+WorkingDirectory=/home/DeusExMachina
+ExecStart=/usr/bin/python3 /home/DeusExMachina/run.py --service
+Restart=on-failure
+RestartSec=5s
+# Environment variables for AI provider API keys
+Environment="GEMINI_API_KEY="
+Environment="ANTHROPIC_API_KEY="
+Environment="OPENAI_API_KEY="
+# Other environment variables
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target
