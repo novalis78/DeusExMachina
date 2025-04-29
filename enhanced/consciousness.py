@@ -13,6 +13,8 @@ import random
 import threading
 import signal
 import queue
+import re
+import subprocess
 from typing import Dict, List, Any, Optional, Callable, Union
 from datetime import datetime, timedelta
 from enum import Enum, auto
@@ -381,7 +383,27 @@ class Consciousness:
                 # Record the activity
                 self.log_activity("drowsy_analysis")
                 
-                # TODO: Implement light analysis logic here
+                # Perform light analysis by reading system metrics
+                try:
+                    # Get current heartbeat data
+                    heartbeat_path = os.path.join(self.log_dir, "heartbeat.json")
+                    
+                    if os.path.exists(heartbeat_path):
+                        with open(heartbeat_path, 'r') as f:
+                            heartbeat_data = json.load(f)
+                            
+                        self.logger.info(f"Light analysis: CPU load {heartbeat_data.get('cpu_load', 'N/A')}, "
+                                        f"Memory free {heartbeat_data.get('memory_free_mb', 'N/A')}MB, "
+                                        f"Disk usage {heartbeat_data.get('disk_usage_root', 'N/A')}%")
+                                        
+                        # Check for anomalies (very basic checks in DROWSY state)
+                        if float(heartbeat_data.get('cpu_load', '0')) > 1.5:
+                            self.logger.warning(f"Light analysis: Elevated CPU load detected: {heartbeat_data.get('cpu_load')}")
+                            # Consider waking up
+                            if self.state.value < ConsciousnessState.AWARE.value:
+                                self._consider_wakeup("Elevated CPU load detected")
+                except Exception as e:
+                    self.logger.error(f"Error in light analysis: {str(e)}")
                 
         elif self.state == ConsciousnessState.AWARE:
             # In aware state, run regular analysis
@@ -392,7 +414,56 @@ class Consciousness:
                 # Record the activity
                 self.log_activity("aware_analysis")
                 
-                # TODO: Implement regular analysis logic here
+                # Perform comprehensive analysis of system state
+                try:
+                    # Get current heartbeat data
+                    heartbeat_path = os.path.join(self.log_dir, "heartbeat.json")
+                    state_path = os.path.join(self.log_dir, "state.json")
+                    
+                    metrics = {}
+                    
+                    # Load heartbeat data
+                    if os.path.exists(heartbeat_path):
+                        with open(heartbeat_path, 'r') as f:
+                            heartbeat_data = json.load(f)
+                            metrics.update(heartbeat_data)
+                    
+                    # Load state data
+                    if os.path.exists(state_path):
+                        with open(state_path, 'r') as f:
+                            state_data = json.load(f)
+                            metrics['system_state'] = state_data.get('state')
+                    
+                    # Log current metrics
+                    self.logger.info(f"Regular analysis: CPU load {metrics.get('cpu_load', 'N/A')}, "
+                                    f"Memory free {metrics.get('memory_free_mb', 'N/A')}MB, "
+                                    f"Processes {metrics.get('total_processes', 'N/A')}, "
+                                    f"System state: {metrics.get('system_state', 'N/A')}")
+                    
+                    # Check for anomalies (more comprehensive checks in AWARE state)
+                    issues = []
+                    
+                    if float(metrics.get('cpu_load', '0')) > 1.0:
+                        issues.append(f"Elevated CPU load: {metrics.get('cpu_load')}")
+                        
+                    if int(metrics.get('memory_free_mb', '9999')) < 500:
+                        issues.append(f"Low free memory: {metrics.get('memory_free_mb')}MB")
+                        
+                    if int(metrics.get('disk_usage_root', '0')) > 85:
+                        issues.append(f"High disk usage: {metrics.get('disk_usage_root')}%")
+                    
+                    if metrics.get('system_state') != 'normal':
+                        issues.append(f"System state is {metrics.get('system_state')}")
+                    
+                    # React to issues
+                    if issues:
+                        self.logger.warning(f"Regular analysis identified issues: {', '.join(issues)}")
+                        
+                        # Escalate consciousness if needed
+                        if len(issues) >= 2 and self.state.value < ConsciousnessState.ALERT.value:
+                            self.change_state(ConsciousnessState.ALERT, f"Multiple issues detected: {', '.join(issues)}")
+                except Exception as e:
+                    self.logger.error(f"Error in regular analysis: {str(e)}")
                 
         elif self.state == ConsciousnessState.ALERT:
             # In alert state, run frequent analysis
@@ -403,7 +474,119 @@ class Consciousness:
                 # Record the activity
                 self.log_activity("alert_analysis")
                 
-                # TODO: Implement enhanced analysis logic here
+                # Perform enhanced analysis with action recommendations
+                try:
+                    # Get current heartbeat data and other metrics
+                    heartbeat_path = os.path.join(self.log_dir, "heartbeat.json")
+                    state_path = os.path.join(self.log_dir, "state.json")
+                    heartbeat_log_path = os.path.join(self.log_dir, "heartbeat.log")
+                    metrics = {}
+                    
+                    # Load heartbeat data
+                    if os.path.exists(heartbeat_path):
+                        with open(heartbeat_path, 'r') as f:
+                            heartbeat_data = json.load(f)
+                            metrics.update(heartbeat_data)
+                    
+                    # Load state data
+                    if os.path.exists(state_path):
+                        with open(state_path, 'r') as f:
+                            state_data = json.load(f)
+                            metrics['system_state'] = state_data.get('state')
+                    
+                    # Check recent heartbeat logs for trends
+                    trend_data = {}
+                    if os.path.exists(heartbeat_log_path):
+                        # Get last 10 lines of the heartbeat log
+                        try:
+                            with open(heartbeat_log_path, 'r') as f:
+                                log_lines = f.readlines()[-10:]
+                                
+                            # Extract CPU and memory trends
+                            cpu_values = []
+                            mem_values = []
+                            
+                            for line in log_lines:
+                                if "CPU load" in line and "Memory free" in line:
+                                    # Extract values using regex
+                                    cpu_match = re.search(r'CPU load: ([0-9.]+)', line)
+                                    mem_match = re.search(r'Memory free: ([0-9.]+)MB', line)
+                                    
+                                    if cpu_match:
+                                        cpu_values.append(float(cpu_match.group(1)))
+                                    if mem_match:
+                                        mem_values.append(float(mem_match.group(1)))
+                            
+                            # Calculate trends
+                            if len(cpu_values) >= 2:
+                                cpu_trend = cpu_values[-1] - cpu_values[0]  # Positive means increasing
+                                trend_data['cpu_trend'] = cpu_trend
+                                
+                            if len(mem_values) >= 2:
+                                mem_trend = mem_values[-1] - mem_values[0]  # Negative means decreasing
+                                trend_data['mem_trend'] = mem_trend
+                        except Exception as e:
+                            self.logger.error(f"Error analyzing heartbeat log: {str(e)}")
+                    
+                    # Log current metrics and trends
+                    self.logger.info(f"Enhanced analysis: CPU load {metrics.get('cpu_load', 'N/A')}, "
+                                    f"Memory free {metrics.get('memory_free_mb', 'N/A')}MB, "
+                                    f"Processes {metrics.get('total_processes', 'N/A')}, "
+                                    f"System state: {metrics.get('system_state', 'N/A')}")
+                    
+                    if trend_data:
+                        self.logger.info(f"Trends: CPU {trend_data.get('cpu_trend', 'N/A')}, "
+                                       f"Memory {trend_data.get('mem_trend', 'N/A')}")
+                    
+                    # Check for issues and generate recommendations
+                    issues = []
+                    recommendations = []
+                    
+                    # CPU checks
+                    if float(metrics.get('cpu_load', '0')) > 1.5:
+                        issues.append(f"High CPU load: {metrics.get('cpu_load')}")
+                        recommendations.append("Investigate top CPU-consuming processes with `top` or `htop`")
+                        
+                    if trend_data.get('cpu_trend', 0) > 0.5:
+                        issues.append(f"Rapidly increasing CPU trend: +{trend_data.get('cpu_trend')}")
+                        recommendations.append("Check for runaway processes or recent system changes")
+                    
+                    # Memory checks
+                    if int(metrics.get('memory_free_mb', '9999')) < 300:
+                        issues.append(f"Critical free memory: {metrics.get('memory_free_mb')}MB")
+                        recommendations.append("Consider restarting memory-intensive services")
+                        
+                    if trend_data.get('mem_trend', 0) < -100:  # Lost 100MB free memory
+                        issues.append(f"Rapidly decreasing free memory: {trend_data.get('mem_trend')}MB")
+                        recommendations.append("Check for memory leaks in services")
+                    
+                    # Disk checks
+                    if int(metrics.get('disk_usage_root', '0')) > 90:
+                        issues.append(f"Critical disk usage: {metrics.get('disk_usage_root')}%")
+                        recommendations.append("Clean up temp files or logs to free space")
+                    
+                    # System state check
+                    if metrics.get('system_state') != 'normal':
+                        issues.append(f"System state is {metrics.get('system_state')}")
+                        recommendations.append(f"Review state_engine.log for state transition cause")
+                    
+                    # React to issues
+                    if issues:
+                        self.logger.warning(f"Enhanced analysis identified {len(issues)} issues: {', '.join(issues)}")
+                        self.logger.warning(f"Recommendations: {', '.join(recommendations)}")
+                        
+                        # Escalate consciousness if needed
+                        if (len(issues) >= 3 or any("Critical" in issue for issue in issues)) and \
+                           self.state.value < ConsciousnessState.FULLY_AWAKE.value:
+                            self.change_state(ConsciousnessState.FULLY_AWAKE, 
+                                             f"Critical issues detected: {', '.join(issues)}")
+                    else:
+                        # De-escalate if no issues found
+                        self.logger.info("Enhanced analysis found no issues, considering state reduction")
+                        if self.time_in_state() > timedelta(minutes=30):
+                            self.change_state(ConsciousnessState.AWARE, "No issues detected, reducing alertness")
+                except Exception as e:
+                    self.logger.error(f"Error in enhanced analysis: {str(e)}")
                 
         elif self.state == ConsciousnessState.FULLY_AWAKE:
             # In fully awake state, run continuous analysis
@@ -414,7 +597,241 @@ class Consciousness:
                 # Record the activity
                 self.log_activity("full_analysis")
                 
-                # TODO: Implement comprehensive analysis logic here
+                # Perform comprehensive analysis with AI assistance if available
+                try:
+                    # Get current heartbeat data and other metrics
+                    heartbeat_path = os.path.join(self.log_dir, "heartbeat.json")
+                    state_path = os.path.join(self.log_dir, "state.json")
+                    heartbeat_log_path = os.path.join(self.log_dir, "heartbeat.log")
+                    state_engine_log_path = os.path.join(self.log_dir, "state_engine.log")
+                    service_status_path = os.path.join(self.log_dir, "service_status.log")
+                    
+                    metrics = {}
+                    logs_data = {}
+                    
+                    # Load all available data
+                    # Load heartbeat data
+                    if os.path.exists(heartbeat_path):
+                        with open(heartbeat_path, 'r') as f:
+                            heartbeat_data = json.load(f)
+                            metrics.update(heartbeat_data)
+                    
+                    # Load state data
+                    if os.path.exists(state_path):
+                        with open(state_path, 'r') as f:
+                            state_data = json.load(f)
+                            metrics['system_state'] = state_data.get('state')
+                            metrics['state_ttl'] = state_data.get('ttl_seconds')
+                    
+                    # Collect recent log data for analysis
+                    for log_path, log_name in [
+                        (heartbeat_log_path, 'heartbeat'),
+                        (state_engine_log_path, 'state_engine'),
+                        (service_status_path, 'service_status')
+                    ]:
+                        if os.path.exists(log_path):
+                            try:
+                                with open(log_path, 'r') as f:
+                                    # Get last 20 lines of each log
+                                    logs_data[log_name] = ''.join(f.readlines()[-20:])
+                            except Exception as e:
+                                self.logger.error(f"Error reading {log_name} log: {str(e)}")
+                    
+                    # Extract trends from logs
+                    trend_data = self._extract_trends_from_logs(logs_data.get('heartbeat', ''))
+                    
+                    # Log comprehensive metrics
+                    self.logger.info(f"Comprehensive analysis: CPU load {metrics.get('cpu_load', 'N/A')}, "
+                                   f"Memory free {metrics.get('memory_free_mb', 'N/A')}MB, "
+                                   f"Processes {metrics.get('total_processes', 'N/A')}, "
+                                   f"System state: {metrics.get('system_state', 'N/A')}, "
+                                   f"Open ports: {metrics.get('open_ports', 'N/A')}")
+                    
+                    if trend_data:
+                        self.logger.info(f"Trends: CPU {trend_data.get('cpu_trend', 'N/A')}, "
+                                       f"Memory {trend_data.get('mem_trend', 'N/A')}")
+                    
+                    # Check for service abnormalities
+                    service_issues = self._check_service_status(logs_data.get('service_status', ''))
+                    
+                    # Generate comprehensive assessment
+                    issues = []
+                    recommendations = []
+                    actions = []
+                    
+                    # CPU checks
+                    if float(metrics.get('cpu_load', '0')) > 1.0:
+                        severity = "Critical" if float(metrics.get('cpu_load', '0')) > 2.0 else "High"
+                        issues.append(f"{severity} CPU load: {metrics.get('cpu_load')}")
+                        recommendations.append("Investigate top CPU-consuming processes with `top` or `htop`")
+                        actions.append(("check_top_cpu", "Execute `top -b -n 1 -o %CPU | head -10` to identify CPU-intensive processes"))
+                        
+                    if trend_data.get('cpu_trend', 0) > 0.3:
+                        issues.append(f"Increasing CPU trend: +{trend_data.get('cpu_trend')}")
+                        recommendations.append("Monitor for potential runaway processes")
+                    
+                    # Memory checks
+                    if int(metrics.get('memory_free_mb', '9999')) < 200:
+                        issues.append(f"Critical free memory: {metrics.get('memory_free_mb')}MB")
+                        recommendations.append("Consider restarting memory-intensive services")
+                        actions.append(("check_memory", "Execute `free -m` and `ps aux --sort=-%mem | head -10` to identify memory usage"))
+                        
+                    elif int(metrics.get('memory_free_mb', '9999')) < 500:
+                        issues.append(f"Low free memory: {metrics.get('memory_free_mb')}MB")
+                        recommendations.append("Monitor memory usage carefully")
+                        
+                    if trend_data.get('mem_trend', 0) < -50:  # Lost 50MB free memory
+                        issues.append(f"Declining free memory: {trend_data.get('mem_trend')}MB")
+                        recommendations.append("Check for memory leaks in services")
+                    
+                    # Disk checks
+                    if int(metrics.get('disk_usage_root', '0')) > 85:
+                        severity = "Critical" if int(metrics.get('disk_usage_root', '0')) > 90 else "High"
+                        issues.append(f"{severity} disk usage: {metrics.get('disk_usage_root')}%")
+                        recommendations.append("Clean up temp files or logs to free space")
+                        actions.append(("check_disk_usage", "Execute `du -h --max-depth=1 /var | sort -hr | head -10` to identify large directories"))
+                    
+                    # System state check
+                    if metrics.get('system_state') != 'normal':
+                        issues.append(f"System state is {metrics.get('system_state')}")
+                        state_logs = logs_data.get('state_engine', '')
+                        state_reason = self._extract_state_reason(state_logs, metrics.get('system_state', ''))
+                        if state_reason:
+                            issues.append(f"State reason: {state_reason}")
+                        recommendations.append(f"Review state_engine.log for state transition cause")
+                    
+                    # Add service issues
+                    issues.extend(service_issues)
+                    if service_issues:
+                        recommendations.append("Check service status with systemctl")
+                        actions.append(("check_services", "Execute `systemctl list-units --state=failed` to see failed services"))
+                    
+                    # Execute immediate actions
+                    action_results = {}
+                    for action_id, action_desc in actions:
+                        self.logger.info(f"Executing action: {action_desc}")
+                        result = self._execute_action(action_id)
+                        if result:
+                            action_results[action_id] = result
+                            self.logger.info(f"Action {action_id} result: {result[:100]}...")  # Log first 100 chars
+                    
+                    # Record issues in database if configured
+                    # TODO: Implement database recording of issues
+                    
+                    # Comprehensive reaction to issues
+                    if issues:
+                        self.logger.warning(f"Comprehensive analysis identified {len(issues)} issues: {', '.join(issues)}")
+                        self.logger.warning(f"Recommendations: {', '.join(recommendations)}")
+                        
+                        # Stay in FULLY_AWAKE state as long as issues persist
+                        self.logger.info("Maintaining FULLY_AWAKE state due to active issues")
+                    else:
+                        # De-escalate if no issues found
+                        self.logger.info("Comprehensive analysis found no issues, considering state reduction")
+                        if self.time_in_state() > timedelta(minutes=30):
+                            self.change_state(ConsciousnessState.ALERT, "No critical issues detected, reducing alertness")
+                except Exception as e:
+                    self.logger.error(f"Error in comprehensive analysis: {str(e)}")
+                
+                
+    def _extract_trends_from_logs(self, heartbeat_log_content):
+        """Extract CPU and memory trends from heartbeat logs"""
+        trend_data = {}
+        
+        try:
+            # Split into lines
+            log_lines = heartbeat_log_content.split('\n')
+            
+            # Extract CPU and memory values
+            cpu_values = []
+            mem_values = []
+            
+            for line in log_lines:
+                if "CPU load" in line and "Memory free" in line:
+                    # Extract values using regex
+                    cpu_match = re.search(r'CPU load: ([0-9.]+)', line)
+                    mem_match = re.search(r'Memory free: ([0-9.]+)MB', line)
+                    
+                    if cpu_match:
+                        cpu_values.append(float(cpu_match.group(1)))
+                    if mem_match:
+                        mem_values.append(float(mem_match.group(1)))
+            
+            # Calculate trends if we have enough data points
+            if len(cpu_values) >= 2:
+                cpu_trend = cpu_values[-1] - cpu_values[0]  # Positive means increasing
+                trend_data['cpu_trend'] = cpu_trend
+                
+            if len(mem_values) >= 2:
+                mem_trend = mem_values[-1] - mem_values[0]  # Negative means decreasing
+                trend_data['mem_trend'] = mem_trend
+        except Exception as e:
+            self.logger.error(f"Error extracting trends: {str(e)}")
+            
+        return trend_data
+        
+    def _check_service_status(self, service_status_content):
+        """Check for service issues in service status log"""
+        issues = []
+        
+        try:
+            # Look for failed or problematic services
+            if "failed" in service_status_content.lower():
+                # Extract failed service names
+                failed_services = re.findall(r'([a-zA-Z0-9_-]+\.service).*?failed', service_status_content)
+                if failed_services:
+                    issues.append(f"Failed services detected: {', '.join(failed_services)}")
+            
+            # Check for specific problematic services
+            for critical_service in ['nginx', 'apache2', 'mysql', 'postgresql', 'sshd']:
+                if f"{critical_service}.service" in service_status_content and "failed" in service_status_content:
+                    issues.append(f"Critical service {critical_service} may have issues")
+        except Exception as e:
+            self.logger.error(f"Error checking service status: {str(e)}")
+            
+        return issues
+        
+    def _extract_state_reason(self, state_log_content, current_state):
+        """Extract the reason for the current system state"""
+        if current_state == 'normal':
+            return None
+            
+        try:
+            # Look for the most recent state transition
+            transitions = re.findall(r'State changed from .* to ' + current_state + r' \(([^)]+)\)', state_log_content)
+            if transitions:
+                return transitions[-1]  # Return the most recent reason
+        except Exception as e:
+            self.logger.error(f"Error extracting state reason: {str(e)}")
+            
+        return None
+        
+    def _execute_action(self, action_id):
+        """Execute an action and return the result"""
+        import subprocess
+        
+        actions = {
+            'check_top_cpu': ['top', '-b', '-n', '1', '-o', '%CPU', '|', 'head', '-10'],
+            'check_memory': ['free', '-m'],
+            'check_disk_usage': ['du', '-h', '--max-depth=1', '/var', '|', 'sort', '-hr', '|', 'head', '-10'],
+            'check_services': ['systemctl', 'list-units', '--state=failed']
+        }
+        
+        if action_id not in actions:
+            self.logger.error(f"Unknown action ID: {action_id}")
+            return None
+            
+        try:
+            # Execute the command
+            cmd = ' '.join(actions[action_id])
+            result = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, text=True)
+            return result
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Action execution failed: {str(e)}")
+            return f"Error: {e.output if hasattr(e, 'output') else str(e)}"
+        except Exception as e:
+            self.logger.error(f"Action execution error: {str(e)}")
+            return None
                 
     def _check_time_based_transitions(self) -> None:
         """Check for automatic state transitions based on time"""

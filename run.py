@@ -367,12 +367,63 @@ def run_service():
         consciousness.stop()
         logger.info("Consciousness system stopped")
 
+def run_analysis_test():
+    """Test the analysis logic using current system state"""
+    logger.info("Starting analysis test")
+    
+    # Create the consciousness system
+    consciousness = Consciousness(
+        install_dir=CONFIG["install_dir"],
+        log_dir=CONFIG["log_dir"],
+        initial_state=ConsciousnessState.AWARE
+    )
+    
+    # Test each level of analysis
+    for state_name, state in [
+        ("DROWSY", ConsciousnessState.DROWSY),
+        ("AWARE", ConsciousnessState.AWARE),
+        ("ALERT", ConsciousnessState.ALERT),
+        ("FULLY_AWAKE", ConsciousnessState.FULLY_AWAKE)
+    ]:
+        logger.info(f"=== Testing {state_name} state analysis ===")
+        
+        # Set the consciousness state
+        consciousness.state = state
+        
+        # Force analysis based on state
+        if state == ConsciousnessState.DROWSY:
+            # Clear the last activity to force execution
+            consciousness.last_activity.pop("drowsy_analysis", None)
+            # Run the state activities check
+            consciousness._check_state_activities()
+            
+        elif state == ConsciousnessState.AWARE:
+            # Clear the last activity to force execution
+            consciousness.last_activity.pop("aware_analysis", None)
+            # Run the state activities check
+            consciousness._check_state_activities()
+            
+        elif state == ConsciousnessState.ALERT:
+            # Clear the last activity to force execution
+            consciousness.last_activity.pop("alert_analysis", None)
+            # Run the state activities check
+            consciousness._check_state_activities()
+            
+        elif state == ConsciousnessState.FULLY_AWAKE:
+            # Clear the last activity to force execution
+            consciousness.last_activity.pop("full_analysis", None)
+            # Run the state activities check
+            consciousness._check_state_activities()
+    
+    logger.info("Analysis testing completed")
+
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(description='Deus Ex Machina Enhanced')
     parser.add_argument('--demo', action='store_true', help='Run a demonstration')
     parser.add_argument('--initialize', action='store_true', help='Initialize the database')
     parser.add_argument('--service', action='store_true', help='Run as a continuous service')
+    parser.add_argument('--test-analysis', action='store_true', help='Test the analysis logic with current system state')
     args = parser.parse_args()
     
     # Make sure directories exist
@@ -390,8 +441,11 @@ def main():
     # Run as service if requested
     elif args.service:
         run_service()
+    # Test analysis logic if requested
+    elif args.test_analysis:
+        run_analysis_test()
     else:
-        print("No action specified. Use --demo to run a demonstration, --initialize to set up the database, or --service to run as a continuous service.")
+        print("No action specified. Use --demo to run a demonstration, --initialize to set up the database, --service to run as a continuous service, or --test-analysis to test the analysis logic.")
 
 if __name__ == "__main__":
     main()
