@@ -95,7 +95,7 @@ class DeusExMachina:
         # Check if we need to install the memory module
         if not os.path.exists(memory_path):
             # Copy the memory.py file to the installation directory
-            source_path = "/home/claude/memory.py"
+            source_path = os.path.join(self.install_dir, "enhanced/memory.py")
             if os.path.exists(source_path):
                 shutil.copy(source_path, memory_path)
                 logger.info(f"Installed memory module to {memory_path}")
@@ -124,7 +124,7 @@ class DeusExMachina:
         # Check if we need to install the action engine
         if not os.path.exists(action_path):
             # Copy the action_engine.py file to the installation directory
-            source_path = "/home/claude/action_engine.py"
+            source_path = os.path.join(self.install_dir, "enhanced/action_engine.py")
             if os.path.exists(source_path):
                 shutil.copy(source_path, action_path)
                 logger.info(f"Installed action engine to {action_path}")
@@ -161,7 +161,7 @@ class DeusExMachina:
                 return
         
         # Copy the updated AI brain to the installation directory
-        source_path = "/home/claude/ai_brain_updated.py"
+        source_path = os.path.join(self.install_dir, "enhanced/ai_brain_updated.py")
         if os.path.exists(source_path):
             try:
                 shutil.copy(source_path, brain_path)

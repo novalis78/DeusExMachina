@@ -5,8 +5,8 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/home/DeusExMachina
-ExecStart=/usr/bin/python3 /home/DeusExMachina/run.py --service
+WorkingDirectory=/opt/deus-ex-machina
+ExecStart=/usr/bin/python3 /opt/deus-ex-machina/enhanced/integration.py monitor --interval 300
 Restart=on-failure
 RestartSec=5s
 # Environment variables for AI provider API keys
@@ -15,6 +15,8 @@ Environment="ANTHROPIC_API_KEY="
 Environment="OPENAI_API_KEY="
 # Other environment variables
 Environment="PYTHONUNBUFFERED=1"
+Environment="DEUS_INSTALL_DIR=/opt/deus-ex-machina"
+Environment="DEUS_LOG_DIR=/var/log/deus-ex-machina"
 
 [Install]
 WantedBy=multi-user.target

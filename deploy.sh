@@ -130,15 +130,15 @@ if [ "$SKIP_DEPS" = false ]; then
     apt-get install -y python3 python3-pip sqlite3
     
     # Install Python dependencies
-    pip3 install numpy pandas scikit-learn matplotlib
-    
+    pip3 install numpy pandas scikit-learn matplotlib --break-system-packages
+
     # Try to install Google AI library (optional)
-    pip3 install google-generativeai || echo "Google AI library not installed (optional)"
+    pip3 install google-generativeai --break-system-packages || echo "Google AI library not installed (optional)"
 fi
 
 # Step 4: Deploy the enhanced components
 echo "Deploying enhanced components..."
-SRC_DIR="/home/DeusExMachina/enhanced"
+SRC_DIR="/home/claude/DeusExMachina/enhanced"
 
 # Copy enhanced components
 cp "$SRC_DIR/memory.py" "$INSTALL_DIR/enhanced/"
@@ -205,8 +205,8 @@ cat > "$INSTALL_DIR/plugins/network_monitor/plugin_metadata.json" << EOT
 EOT
 
 # Copy plugin implementations
-cp -r "$SRC_DIR/plugins/backup_restore.py" "$INSTALL_DIR/plugins/backup_restore/"
-cp -r "$SRC_DIR/plugins/network_monitor.py" "$INSTALL_DIR/plugins/network_monitor/"
+cp -r "$SRC_DIR/plugins/backup_restore.py" "$INSTALL_DIR/plugins/backup_restore/" || echo "Warning: backup_restore.py not found"
+cp -r "$SRC_DIR/plugins/network_monitor.py" "$INSTALL_DIR/plugins/network_monitor/" || echo "Warning: network_monitor.py not found"
 
 # Step 5: Initialize the database
 echo "Initializing database..."

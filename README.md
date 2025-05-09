@@ -19,24 +19,40 @@
 
 ---
 
+## Quick Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/novalis78/DeusExMachina.git
+cd DeusExMachina
+
+# Make the installer executable
+chmod +x install.sh
+
+# Run the installer (requires sudo)
+sudo ./install.sh
+```
+
+The installer will guide you through the process and set up everything for you. For detailed installation options and troubleshooting, see our [Installation Guide](INSTALL.md).
+
+---
+
 ## Monitoring the System
 
 The enhanced Deus Ex Machina system can be easily monitored through its comprehensive logging. For a complete guide on monitoring, understanding the system's behavior, and troubleshooting, please refer to our [Monitoring Guide](MONITORING_GUIDE.md).
 
 Quick tips:
 - Follow logs in real-time: `journalctl -u deus-enhanced.service -f`
-- View detailed logs: `tail -f /home/DeusExMachina/var/logs/deus.log`
+- View detailed logs: `tail -f /var/log/deus-ex-machina/integration.log`
 - Check service status: `systemctl status deus-enhanced.service`
 - Monitor different consciousness states (DORMANT, DROWSY, AWARE, ALERT, FULLY_AWAKE)
 - Track AI provider usage and system health assessments
-
-For deployment instructions, see [Deployment Guide](DEPLOYMENT_GUIDE.md).
 
 ## Weekly Email Reports
 
 The enhanced system can send weekly email reports summarizing system health, incidents, and recommendations. To set up email reporting:
 
-1. Edit `/home/DeusExMachina/config/report_config.json` with your email settings:
+1. Edit `/opt/deus-ex-machina/config/report_config.json` with your email settings:
 
    a. First, choose a provider by setting `"email_provider"` to one of:
       - `"smtp"` - For regular email servers (Gmail, Office365, etc.)
@@ -78,12 +94,12 @@ The enhanced system can send weekly email reports summarizing system health, inc
 2. Add the provided crontab entry to your system:
    ```bash
    crontab -e
-   # Add the line from /home/DeusExMachina/config/crontab_addition.txt
+   # Add the line from /opt/deus-ex-machina/config/crontab_addition.txt
    ```
 
 3. Generate a sample report to preview the format:
    ```bash
-   python3 /home/DeusExMachina/enhanced/generate_sample_report.py
+   python3 /opt/deus-ex-machina/enhanced/generate_sample_report.py
    ```
 
 The report includes current system metrics, service health, state transitions, and recommendations for optimizing your server.
@@ -133,7 +149,6 @@ When the Vigilance module detects critical conditions:
 - It leaves a structured reflection in `ai_assessment.json`
 - Designed to eventually support deeper investigation or mitigation
 
-
 ---
 
 ### 🧠 Neuro-Inspired Architecture
@@ -165,115 +180,6 @@ In this model, token usage is sacred. The AI becomes a background overseer—a l
 
 ---
 
-## Installation
-
-The simplest way to install Deus Ex Machina is using the provided installation script:
-
-```bash
-# Clone the repository
-git clone https://github.com/novalis78/deus-ex-machina.git
-cd deus-ex-machina
-
-# Set the API key (never commit this!)
-echo 'GEMINI_API_KEY = "your-google-api-key-here"' > config/gemini_config.py
-
-# Make scripts executable
-chmod +x scripts/install.sh
-chmod +x core/**/*.sh
-
-# Run the installer as root
-sudo ./scripts/install.sh
-```
-
-Alternatively, you can set up the system manually as described below.
-
----
-
-## Cronjob Setup and Timing
-
-Here's how to schedule everything if you're using `cron`. Use `crontab -e` to edit root/system cron:
-
-```cron
-# Run state engine every 2 minutes
-*/2 * * * * /usr/bin/python3 /opt/deus-ex-machina/core/state_engine/state_engine.py >> /var/log/deus-ex-machina/state_engine.log 2>&1
-
-# Run trigger (launches breath/vigilance based on state)
-*/2 * * * * /usr/bin/python3 /opt/deus-ex-machina/core/state_engine/state_trigger.py >> /var/log/deus-ex-machina/state_trigger.log 2>&1
-```
-
-`heartbeat.sh` is designed to run as a persistent **systemd service**, like so:
-
-```ini
-# /etc/systemd/system/deus-heartbeat.service
-[Unit]
-Description=Deus Ex Machina Heartbeat Monitor
-After=network.target
-
-[Service]
-ExecStart=/opt/deus-ex-machina/core/heartbeat/heartbeat.sh
-Restart=always
-User=root
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable with:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now deus-heartbeat
-```
-
----
-
-## Summary of Control Flow
-
-```
-systemd → heartbeat.sh (continuous)
-cron →
-  state_engine.py →
-    state_trigger.py →
-      [breath.sh, vigilance.sh] →
-        ai_brain.py (conditionally triggered by vigilance.sh)
-```
-
-
----
-
-## File Tree Structure
-
-```
-deus-ex-machina/
-├── README.md
-├── LICENSE
-├── DEVELOPMENT.md         # Development roadmap
-├── config/
-│   ├── config.py          # Centralized configuration
-│   └── gemini_config.py   # Contains GEMINI_API_KEY (not committed)
-├── core/
-│   ├── heartbeat/
-│   │   ├── heartbeat.sh
-│   │   ├── heartbeat.service
-│   │   └── heartbeat_test.sh
-│   ├── breath/
-│   │   └── breath.sh
-│   ├── vigilance/
-│   │   ├── vigilance.sh
-│   │   └── ai_brain.py
-│   └── state_engine/
-│       ├── state_engine.py
-│       └── state_trigger.py
-├── scripts/
-│   ├── install.sh         # Installation script
-│   └── bash_config.sh     # Shared bash configuration
-└── var/
-    └── logs/              # Symbolic or bind mount to /var/log/deus-ex-machina
-```
-
----
-
 ## Configuration 
 
 ### Environment Variables
@@ -282,6 +188,8 @@ The system now supports configuration through environment variables:
 - `DEUS_INSTALL_DIR`: Installation directory (default: `/opt/deus-ex-machina`)
 - `DEUS_LOG_DIR`: Log directory (default: `/var/log/deus-ex-machina`)
 - `GEMINI_API_KEY`: Google Gemini API key for AI analysis
+- `ANTHROPIC_API_KEY`: Anthropic API key (optional alternative AI provider)
+- `OPENAI_API_KEY`: OpenAI API key (optional alternative AI provider)
 
 ### Configuration Files
 The main configuration files are:
@@ -295,35 +203,6 @@ At minimum, you must provide a Gemini API key in either:
 - The `config/gemini_config.py` file
 
 Remember to ensure `gemini_config.py` is **not committed** by adding it to your `.gitignore`.
-
----
-
-## Getting Started
-
-1. Clone the repository
-2. Set up the API key in environment or `gemini_config.py`
-3. Run the installation script or set up manually:
-   ```bash
-   sudo ./scripts/install.sh
-   ```
-4. The system will begin monitoring with heartbeat active
-5. Logs and insights will accumulate in `/var/log/deus-ex-machina/`
-
-### Testing the AI Awakening
-
-To test if the AI can properly awaken and analyze alerts, use the included test script:
-
-```bash
-sudo ./scripts/test_ai_wake.sh
-```
-
-This script:
-1. Generates simulated alert conditions
-2. Sets the system state to "alert"
-3. Triggers the vigilance module and AI brain
-4. Verifies if the AI produced an assessment
-
-After running, you can examine the AI's thoughts in `/var/log/deus-ex-machina/ai_assessment.json`.
 
 ---
 
